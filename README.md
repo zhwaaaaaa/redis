@@ -12,3 +12,6 @@ help more people and myself to understand redis
 
 # other
 ...
+
+# system require
+linux and clion
