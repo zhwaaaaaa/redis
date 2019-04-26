@@ -5,4 +5,4 @@ redis for clion and cmake
 `3.2.12`
 
 # what
-use clion and cmake to debug redis
+use clion and cmake to debug redis.and I will add comment for code.
