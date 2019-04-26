@@ -6,3 +6,6 @@ redis for clion and cmake
 
 # what
 use clion and cmake to debug redis.and I will add comment for code.
+
+# goal
+help more people and myself to understand redis
