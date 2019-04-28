@@ -62,7 +62,21 @@ struct aeEventLoop;
 
 /* Types and data structures */
 typedef void aeFileProc(struct aeEventLoop *eventLoop, int fd, void *clientData, int mask);
+
+/**
+ * 定时器回调函数
+ * @param eventLoop loop
+ * @param id 创建定时器的id
+ * @param clientData 创建定时器时传入的自定义数据
+ * @return AE_NOMORE(-1) 定时器不再使用了，aeEventFinalizerProc会被调用，否则继续下一次定时timeout时间
+ */
 typedef int aeTimeProc(struct aeEventLoop *eventLoop, long long id, void *clientData);
+
+/**
+ * 定时器回收函数。当定时器不再被使用的时候（aeTimeProc函数返回AE_NOMORE）调用
+ * @param eventLoop loop
+ * @param clientData 创建定时器时传入的自定义数据
+ */
 typedef void aeEventFinalizerProc(struct aeEventLoop *eventLoop, void *clientData);
 typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
 
@@ -91,7 +105,8 @@ typedef struct aeFiredEvent {
     int mask;
 } aeFiredEvent;
 
-/* State of an event based program */
+/* State of an event based program
+ * 事件循环核心结构体*/
 typedef struct aeEventLoop {
     int maxfd;   /* highest file descriptor currently registered */
     int setsize; /* max number of file descriptors tracked */
@@ -105,7 +120,13 @@ typedef struct aeEventLoop {
     aeBeforeSleepProc *beforesleep;
 } aeEventLoop;
 
-/* Prototypes */
+/*Prototypes */
+/**
+ * 创建 aeEventLoop
+ * aeEventLoop 是用来存储核心上下文的
+ * @param setsize
+ * @return
+ */
 aeEventLoop *aeCreateEventLoop(int setsize);
 void aeDeleteEventLoop(aeEventLoop *eventLoop);
 void aeStop(aeEventLoop *eventLoop);
@@ -113,6 +134,16 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
         aeFileProc *proc, void *clientData);
 void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask);
 int aeGetFileEvents(aeEventLoop *eventLoop, int fd);
+
+/**
+ * 创建定时器事件
+ * @param eventLoop loop
+ * @param milliseconds 定时器timeout 毫秒数
+ * @param proc 定时器回调函数
+ * @param clientData 自定义数据，用在proc回调的时候
+ * @param finalizerProc 定时器释放处理函数
+ * @return 自增的id
+ */
 long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
         aeTimeProc *proc, void *clientData,
         aeEventFinalizerProc *finalizerProc);
