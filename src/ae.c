@@ -52,7 +52,6 @@
 #ifdef HAVE_EPOLL
 
 #include "ae_epoll.c"
-#include "server.h"
 
 #else
 #ifdef HAVE_KQUEUE

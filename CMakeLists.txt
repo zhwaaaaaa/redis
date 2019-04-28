@@ -3,9 +3,12 @@ project(redis)
 
 set(CMAKE_C_STANDARD 99)
 
-set(CLIENT_FILES
-        src/redis-cli.c)
-
+include_directories(deps/geohash-int)
+include_directories(deps/hiredis)
+include_directories(deps/linenoise)
+include_directories(deps/lua/src)
+include_directories(deps/jemalloc/include)
+# -----lua--------------------
 set(LUA_FILES
         deps/lua/src/lua.c
         deps/lua/src/lua_cmsgpack.c
@@ -47,38 +50,37 @@ set(LUA_FILES
         deps/lua/src/ltable.c
         deps/lua/src/ldebug.c
         )
-
 add_library(lua ${LUA_FILES})
+target_link_libraries(lua m)
 
-
-set(GEOHASH_INT_FILES
-        deps/geohash-int/geohash.c
-        deps/geohash-int/geohash_helper.c
-        )
-
-add_library(geohash-int ${GEOHASH_INT_FILES})
-
-set(HIREDIS_FILES
-        deps/hiredis/hiredis.c
+add_library(linenoise deps/linenoise/linenoise.c)
+add_library(sds src/sds.c)
+add_library(anet src/anet.c)
+add_library(release src/release.c)
+add_library(ae src/ae.c)
+add_library(zmalloc src/zmalloc.c)
+add_library(crc64 src/crc64.c)
+add_library(geohash-int deps/geohash-int/geohash.c
+        deps/geohash-int/geohash_helper.c)
+add_library(hiredis deps/hiredis/hiredis.c
         deps/hiredis/dict.c
         deps/hiredis/net.c
         deps/hiredis/sds.c
-        deps/hiredis/async.c
-        )
+        deps/hiredis/async.c)
 
-add_library(hiredis ${HIREDIS_FILES})
+# -------------client--------------------------
+add_executable(redis-cli src/redis-cli.c)
+target_link_libraries(redis-cli sds anet release hiredis linenoise m ae crc64 zmalloc)
 
-set(SOURCE_FILES
+# -----------server----------------------
+set(SERVER_FILES
         src/server.c
         src/zipmap.c
         src/config.c
         src/crc16.c
         src/endianconv.c
-        src/zmalloc.c
         src/redis-check-rdb.c
-        src/crc64.c
         src/bio.c
-        src/ae.c
         src/geo.c
         src/sentinel.c
         src/bitops.c
@@ -108,7 +110,6 @@ set(SOURCE_FILES
         src/util.c
         src/ae_epoll.c
         src/sha1.c
-        src/release.c
         src/t_list.c
         src/intset.c
         src/dict.c
@@ -118,30 +119,10 @@ set(SOURCE_FILES
         src/syncio.c
         src/t_set.c
         src/t_hash.c
-        src/sds.c
         src/multi.c
         src/sparkline.c
         src/lzf_c.c
-        src/anet.c
         src/rio.c)
 
-include_directories(deps/geohash-int)
-include_directories(deps/hiredis)
-include_directories(deps/linenoise)
-include_directories(deps/lua/src)
-include_directories(deps/jemalloc/include)
-
-
-add_executable(redis-server ${SOURCE_FILES})
-
-target_link_libraries(redis-server pthread)
-
-target_link_libraries(lua m)
-target_link_libraries(redis-server dl)
-
-target_link_libraries(redis-server lua)
-target_link_libraries(redis-server geohash-int)
-target_link_libraries(redis-server hiredis)
-
-
-
+add_executable(redis-server ${SERVER_FILES})
+target_link_libraries(redis-server dl lua geohash-int hiredis pthread sds release ae anet crc64 zmalloc)

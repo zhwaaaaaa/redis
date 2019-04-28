@@ -549,9 +549,10 @@ int anetTcpAccept(char *err, int s, char *ip, size_t ip_len, int *port) {
     socklen_t salen = sizeof(sa);
     if ((fd = anetGenericAccept(err,s,(struct sockaddr*)&sa,&salen)) == -1)
         return ANET_ERR;
-
+    // 判断是否是IPV4还是IPV6
     if (sa.ss_family == AF_INET) {
         struct sockaddr_in *s = (struct sockaddr_in *)&sa;
+        // ip地址转化为字符串
         if (ip) inet_ntop(AF_INET,(void*)&(s->sin_addr),ip,ip_len);
         if (port) *port = ntohs(s->sin_port);
     } else {
