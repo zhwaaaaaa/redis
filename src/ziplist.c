@@ -421,7 +421,7 @@ void zipEntry(unsigned char *p, zlentry *e) {
     e->headersize = e->prevrawlensize + e->lensize;
     e->p = p;
 }
-
+// [4:bytes][4:offset][2:len][len:data][1:end255]
 /* Create a new empty ziplist. */
 unsigned char *ziplistNew(void) {
     unsigned int bytes = ZIPLIST_HEADER_SIZE+1;

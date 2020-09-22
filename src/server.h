@@ -613,6 +613,8 @@ typedef struct client {
     /* Response buffer */
     int bufpos;
     char buf[PROTO_REPLY_CHUNK_BYTES];
+    // zw add
+    char peer_addr[64];
 } client;
 
 struct saveparam {
@@ -709,7 +711,7 @@ struct redisServer {
     char **exec_argv;           /* Executable argv vector (copy). */
     int hz;                     /* serverCron() calls frequency in hertz */
     redisDb *db;
-    dict *commands;             /* Command table */
+    dict *commands;             /* Command table,命令表，redis 支持 command-rename可以给命令改名 */
     dict *orig_commands;        /* Command table before command renaming. */
     aeEventLoop *el;
     unsigned lruclock:LRU_BITS; /* Clock for LRU eviction */

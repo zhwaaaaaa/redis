@@ -108,7 +108,6 @@ set(SERVER_FILES
         src/setproctitle.c
         src/notify.c
         src/util.c
-        src/ae_epoll.c
         src/sha1.c
         src/t_list.c
         src/intset.c
@@ -123,6 +122,18 @@ set(SERVER_FILES
         src/sparkline.c
         src/lzf_c.c
         src/rio.c)
+#
+#IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+#    list(APPEND SERVER_FILES src/ae_epoll.c)
+#ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Windows")
+#    list(APPEND SERVER_FILES src/ae_select.c)
+#ELSEIF (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+#    list(APPEND SERVER_FILES src/ae_kqueue.c)
+#ELSE ()
+#    list(APPEND SERVER_FILES src/ae_evport.c)
+#ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 add_executable(redis-server ${SERVER_FILES})
+add_executable(redis-sentinel ${SERVER_FILES})
 target_link_libraries(redis-server dl lua geohash-int hiredis pthread sds release ae anet crc64 zmalloc)
+target_link_libraries(redis-sentinel dl lua geohash-int hiredis pthread sds release ae anet crc64 zmalloc)

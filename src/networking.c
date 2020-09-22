@@ -619,7 +619,7 @@ int clientHasPendingReplies(client *c) {
 
 #define MAX_ACCEPTS_PER_CALL 1000
 
-static void acceptCommonHandler(int fd, int flags, char *ip) {
+static void acceptCommonHandler(int fd, int flags, char *ip, int port) {
     client *c;
     // 创建client结构体
     if ((c = createClient(fd)) == NULL) {
@@ -645,7 +645,12 @@ static void acceptCommonHandler(int fd, int flags, char *ip) {
         freeClient(c);
         return;
     }
-
+    if (ip) {
+        sprintf(c->peer_addr, "%s:%d", ip, port);
+        serverLog(LL_NOTICE, "Accepted %s", c->peer_addr);
+    } else {
+        c->peer_addr[0] = '\0';
+    }
     /* If the server is running in protected mode (the default) and there
      * is no password set, nor a specific interface is bound, we don't accept
      * requests from non loopback interfaces. Instead we try to explain the
@@ -659,25 +664,25 @@ static void acceptCommonHandler(int fd, int flags, char *ip) {
         if (strcmp(ip, "127.0.0.1") && strcmp(ip, "::1")) {
             char *err =
                     "-DENIED Redis is running in protected mode because protected "
-                            "mode is enabled, no bind address was specified, no "
-                            "authentication password is requested to clients. In this mode "
-                            "connections are only accepted from the loopback interface. "
-                            "If you want to connect from external computers to Redis you "
-                            "may adopt one of the following solutions: "
-                            "1) Just disable protected mode sending the command "
-                            "'CONFIG SET protected-mode no' from the loopback interface "
-                            "by connecting to Redis from the same host the server is "
-                            "running, however MAKE SURE Redis is not publicly accessible "
-                            "from internet if you do so. Use CONFIG REWRITE to make this "
-                            "change permanent. "
-                            "2) Alternatively you can just disable the protected mode by "
-                            "editing the Redis configuration file, and setting the protected "
-                            "mode option to 'no', and then restarting the server. "
-                            "3) If you started the server manually just for testing, restart "
-                            "it with the '--protected-mode no' option. "
-                            "4) Setup a bind address or an authentication password. "
-                            "NOTE: You only need to do one of the above things in order for "
-                            "the server to start accepting connections from the outside.\r\n";
+                    "mode is enabled, no bind address was specified, no "
+                    "authentication password is requested to clients. In this mode "
+                    "connections are only accepted from the loopback interface. "
+                    "If you want to connect from external computers to Redis you "
+                    "may adopt one of the following solutions: "
+                    "1) Just disable protected mode sending the command "
+                    "'CONFIG SET protected-mode no' from the loopback interface "
+                    "by connecting to Redis from the same host the server is "
+                    "running, however MAKE SURE Redis is not publicly accessible "
+                    "from internet if you do so. Use CONFIG REWRITE to make this "
+                    "change permanent. "
+                    "2) Alternatively you can just disable the protected mode by "
+                    "editing the Redis configuration file, and setting the protected "
+                    "mode option to 'no', and then restarting the server. "
+                    "3) If you started the server manually just for testing, restart "
+                    "it with the '--protected-mode no' option. "
+                    "4) Setup a bind address or an authentication password. "
+                    "NOTE: You only need to do one of the above things in order for "
+                    "the server to start accepting connections from the outside.\r\n";
             if (write(c->fd, err, strlen(err)) == -1) {
                 /* Nothing to do, Just to avoid the warning... */
             }
@@ -714,8 +719,7 @@ void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
                           "Accepting client connection: %s", server.neterr);
             return;
         }
-        serverLog(LL_NOTICE, "Accepted %s:%d", cip, cport);
-        acceptCommonHandler(cfd, 0, cip);
+        acceptCommonHandler(cfd, 0, cip, cport);
     }
 }
 
@@ -734,7 +738,7 @@ void acceptUnixHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
             return;
         }
         serverLog(LL_VERBOSE, "Accepted connection to %s", server.unixsocket);
-        acceptCommonHandler(cfd, CLIENT_UNIX_SOCKET, NULL);
+        acceptCommonHandler(cfd, CLIENT_UNIX_SOCKET, NULL, 0);
     }
 }
 
@@ -1652,7 +1656,7 @@ void clientCommand(client *c) {
             if (p[j] < '!' || p[j] > '~') { /* ASCII is assumed. */
                 addReplyError(c,
                               "Client names cannot contain spaces, "
-                                      "newlines or special characters.");
+                              "newlines or special characters.");
                 return;
             }
         }

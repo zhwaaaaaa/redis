@@ -1194,7 +1194,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
 
             if (pid == -1) {
                 serverLog(LL_WARNING, "wait3() returned an error: %s. "
-                                  "rdb_child_pid = %d, aof_child_pid = %d",
+                                      "rdb_child_pid = %d, aof_child_pid = %d",
                           strerror(errno),
                           (int) server.rdb_child_pid,
                           (int) server.aof_child_pid);
@@ -1710,28 +1710,28 @@ void adjustOpenFilesLimit(void) {
                 server.maxclients = bestlimit - CONFIG_MIN_RESERVED_FDS;
                 if (server.maxclients < 1) {
                     serverLog(LL_WARNING, "Your current 'ulimit -n' "
-                                      "of %llu is not enough for the server to start. "
-                                      "Please increase your open file limit to at least "
-                                      "%llu. Exiting.",
+                                          "of %llu is not enough for the server to start. "
+                                          "Please increase your open file limit to at least "
+                                          "%llu. Exiting.",
                               (unsigned long long) oldlimit,
                               (unsigned long long) maxfiles);
                     exit(1);
                 }
                 serverLog(LL_WARNING, "You requested maxclients of %d "
-                                  "requiring at least %llu max file descriptors.",
+                                      "requiring at least %llu max file descriptors.",
                           old_maxclients,
                           (unsigned long long) maxfiles);
                 serverLog(LL_WARNING, "Server can't set maximum open files "
-                                  "to %llu because of OS error: %s.",
+                                      "to %llu because of OS error: %s.",
                           (unsigned long long) maxfiles, strerror(setrlimit_error));
                 serverLog(LL_WARNING, "Current maximum open files is %llu. "
-                                  "maxclients has been reduced to %d to compensate for "
-                                  "low ulimit. "
-                                  "If you need higher maxclients increase 'ulimit -n'.",
+                                      "maxclients has been reduced to %d to compensate for "
+                                      "low ulimit. "
+                                      "If you need higher maxclients increase 'ulimit -n'.",
                           (unsigned long long) bestlimit, server.maxclients);
             } else {
                 serverLog(LL_NOTICE, "Increased maximum number of open files "
-                                  "to %llu (it was originally set to %llu).",
+                                     "to %llu (it was originally set to %llu).",
                           (unsigned long long) maxfiles,
                           (unsigned long long) oldlimit);
             }
@@ -2372,6 +2372,13 @@ void call(client *c, int flags) {
     server.stat_numcommands++;
 }
 
+void printCommand(client *c) {
+    serverLog(LL_NOTICE, "============COMMAND:%llu[%s]->%d=============", c->id, c->peer_addr, c->argc);
+    for (int i = 0; i < c->argc; ++i) {
+        serverLog(LL_NOTICE, "COMMAND:%d->[%s]", i, c->argv[i]->ptr);
+    }
+}
+
 /* If this function gets called we already read a whole
  * command, arguments are in the client argv/argc fields.
  * processCommand() execute the command or prepare the
@@ -2385,6 +2392,7 @@ int processCommand(client *c) {
      * go through checking for replication and QUIT will cause trouble
      * when FORCE_REPLICATION is enabled and would be implemented in
      * a regular command proc. */
+    printCommand(c);
     if (!strcasecmp(c->argv[0]->ptr, "quit")) {
         addReply(c, shared.ok);
         c->flags |= CLIENT_CLOSE_AFTER_REPLY;
@@ -2900,24 +2908,24 @@ sds genRedisInfoString(char *section) {
 
         info = sdscatprintf(info,
                             "# Server\r\n"
-                                    "redis_version:%s\r\n"
-                                    "redis_git_sha1:%s\r\n"
-                                    "redis_git_dirty:%d\r\n"
-                                    "redis_build_id:%llx\r\n"
-                                    "redis_mode:%s\r\n"
-                                    "os:%s %s %s\r\n"
-                                    "arch_bits:%d\r\n"
-                                    "multiplexing_api:%s\r\n"
-                                    "gcc_version:%d.%d.%d\r\n"
-                                    "process_id:%ld\r\n"
-                                    "run_id:%s\r\n"
-                                    "tcp_port:%d\r\n"
-                                    "uptime_in_seconds:%jd\r\n"
-                                    "uptime_in_days:%jd\r\n"
-                                    "hz:%d\r\n"
-                                    "lru_clock:%ld\r\n"
-                                    "executable:%s\r\n"
-                                    "config_file:%s\r\n",
+                            "redis_version:%s\r\n"
+                            "redis_git_sha1:%s\r\n"
+                            "redis_git_dirty:%d\r\n"
+                            "redis_build_id:%llx\r\n"
+                            "redis_mode:%s\r\n"
+                            "os:%s %s %s\r\n"
+                            "arch_bits:%d\r\n"
+                            "multiplexing_api:%s\r\n"
+                            "gcc_version:%d.%d.%d\r\n"
+                            "process_id:%ld\r\n"
+                            "run_id:%s\r\n"
+                            "tcp_port:%d\r\n"
+                            "uptime_in_seconds:%jd\r\n"
+                            "uptime_in_days:%jd\r\n"
+                            "hz:%d\r\n"
+                            "lru_clock:%ld\r\n"
+                            "executable:%s\r\n"
+                            "config_file:%s\r\n",
                             REDIS_VERSION,
                             redisGitSHA1(),
                             strtol(redisGitDirty(), NULL, 10) > 0,
@@ -2947,10 +2955,10 @@ sds genRedisInfoString(char *section) {
         if (sections++) info = sdscat(info, "\r\n");
         info = sdscatprintf(info,
                             "# Clients\r\n"
-                                    "connected_clients:%lu\r\n"
-                                    "client_longest_output_list:%lu\r\n"
-                                    "client_biggest_input_buf:%lu\r\n"
-                                    "blocked_clients:%d\r\n",
+                            "connected_clients:%lu\r\n"
+                            "client_longest_output_list:%lu\r\n"
+                            "client_biggest_input_buf:%lu\r\n"
+                            "blocked_clients:%d\r\n",
                             listLength(server.clients) - listLength(server.slaves),
                             lol, bib,
                             server.bpop_blocked_clients);
@@ -2986,21 +2994,21 @@ sds genRedisInfoString(char *section) {
         if (sections++) info = sdscat(info, "\r\n");
         info = sdscatprintf(info,
                             "# Memory\r\n"
-                                    "used_memory:%zu\r\n"
-                                    "used_memory_human:%s\r\n"
-                                    "used_memory_rss:%zu\r\n"
-                                    "used_memory_rss_human:%s\r\n"
-                                    "used_memory_peak:%zu\r\n"
-                                    "used_memory_peak_human:%s\r\n"
-                                    "total_system_memory:%lu\r\n"
-                                    "total_system_memory_human:%s\r\n"
-                                    "used_memory_lua:%lld\r\n"
-                                    "used_memory_lua_human:%s\r\n"
-                                    "maxmemory:%lld\r\n"
-                                    "maxmemory_human:%s\r\n"
-                                    "maxmemory_policy:%s\r\n"
-                                    "mem_fragmentation_ratio:%.2f\r\n"
-                                    "mem_allocator:%s\r\n",
+                            "used_memory:%zu\r\n"
+                            "used_memory_human:%s\r\n"
+                            "used_memory_rss:%zu\r\n"
+                            "used_memory_rss_human:%s\r\n"
+                            "used_memory_peak:%zu\r\n"
+                            "used_memory_peak_human:%s\r\n"
+                            "total_system_memory:%lu\r\n"
+                            "total_system_memory_human:%s\r\n"
+                            "used_memory_lua:%lld\r\n"
+                            "used_memory_lua_human:%s\r\n"
+                            "maxmemory:%lld\r\n"
+                            "maxmemory_human:%s\r\n"
+                            "maxmemory_policy:%s\r\n"
+                            "mem_fragmentation_ratio:%.2f\r\n"
+                            "mem_allocator:%s\r\n",
                             zmalloc_used,
                             hmem,
                             server.resident_set_size,
@@ -3024,20 +3032,20 @@ sds genRedisInfoString(char *section) {
         if (sections++) info = sdscat(info, "\r\n");
         info = sdscatprintf(info,
                             "# Persistence\r\n"
-                                    "loading:%d\r\n"
-                                    "rdb_changes_since_last_save:%lld\r\n"
-                                    "rdb_bgsave_in_progress:%d\r\n"
-                                    "rdb_last_save_time:%jd\r\n"
-                                    "rdb_last_bgsave_status:%s\r\n"
-                                    "rdb_last_bgsave_time_sec:%jd\r\n"
-                                    "rdb_current_bgsave_time_sec:%jd\r\n"
-                                    "aof_enabled:%d\r\n"
-                                    "aof_rewrite_in_progress:%d\r\n"
-                                    "aof_rewrite_scheduled:%d\r\n"
-                                    "aof_last_rewrite_time_sec:%jd\r\n"
-                                    "aof_current_rewrite_time_sec:%jd\r\n"
-                                    "aof_last_bgrewrite_status:%s\r\n"
-                                    "aof_last_write_status:%s\r\n",
+                            "loading:%d\r\n"
+                            "rdb_changes_since_last_save:%lld\r\n"
+                            "rdb_bgsave_in_progress:%d\r\n"
+                            "rdb_last_save_time:%jd\r\n"
+                            "rdb_last_bgsave_status:%s\r\n"
+                            "rdb_last_bgsave_time_sec:%jd\r\n"
+                            "rdb_current_bgsave_time_sec:%jd\r\n"
+                            "aof_enabled:%d\r\n"
+                            "aof_rewrite_in_progress:%d\r\n"
+                            "aof_rewrite_scheduled:%d\r\n"
+                            "aof_last_rewrite_time_sec:%jd\r\n"
+                            "aof_current_rewrite_time_sec:%jd\r\n"
+                            "aof_last_bgrewrite_status:%s\r\n"
+                            "aof_last_write_status:%s\r\n",
                             server.loading,
                             server.dirty,
                             server.rdb_child_pid != -1,
@@ -3058,12 +3066,12 @@ sds genRedisInfoString(char *section) {
         if (server.aof_state != AOF_OFF) {
             info = sdscatprintf(info,
                                 "aof_current_size:%lld\r\n"
-                                        "aof_base_size:%lld\r\n"
-                                        "aof_pending_rewrite:%d\r\n"
-                                        "aof_buffer_length:%zu\r\n"
-                                        "aof_rewrite_buffer_length:%lu\r\n"
-                                        "aof_pending_bio_fsync:%llu\r\n"
-                                        "aof_delayed_fsync:%lu\r\n",
+                                "aof_base_size:%lld\r\n"
+                                "aof_pending_rewrite:%d\r\n"
+                                "aof_buffer_length:%zu\r\n"
+                                "aof_rewrite_buffer_length:%lu\r\n"
+                                "aof_pending_bio_fsync:%llu\r\n"
+                                "aof_delayed_fsync:%lu\r\n",
                                 (long long) server.aof_current_size,
                                 (long long) server.aof_rewrite_base_size,
                                 server.aof_rewrite_scheduled,
@@ -3092,10 +3100,10 @@ sds genRedisInfoString(char *section) {
 
             info = sdscatprintf(info,
                                 "loading_start_time:%jd\r\n"
-                                        "loading_total_bytes:%llu\r\n"
-                                        "loading_loaded_bytes:%llu\r\n"
-                                        "loading_loaded_perc:%.2f\r\n"
-                                        "loading_eta_seconds:%jd\r\n",
+                                "loading_total_bytes:%llu\r\n"
+                                "loading_loaded_bytes:%llu\r\n"
+                                "loading_loaded_perc:%.2f\r\n"
+                                "loading_eta_seconds:%jd\r\n",
                                 (intmax_t) server.loading_start_time,
                                 (unsigned long long) server.loading_total_bytes,
                                 (unsigned long long) server.loading_loaded_bytes,
@@ -3110,25 +3118,25 @@ sds genRedisInfoString(char *section) {
         if (sections++) info = sdscat(info, "\r\n");
         info = sdscatprintf(info,
                             "# Stats\r\n"
-                                    "total_connections_received:%lld\r\n"
-                                    "total_commands_processed:%lld\r\n"
-                                    "instantaneous_ops_per_sec:%lld\r\n"
-                                    "total_net_input_bytes:%lld\r\n"
-                                    "total_net_output_bytes:%lld\r\n"
-                                    "instantaneous_input_kbps:%.2f\r\n"
-                                    "instantaneous_output_kbps:%.2f\r\n"
-                                    "rejected_connections:%lld\r\n"
-                                    "sync_full:%lld\r\n"
-                                    "sync_partial_ok:%lld\r\n"
-                                    "sync_partial_err:%lld\r\n"
-                                    "expired_keys:%lld\r\n"
-                                    "evicted_keys:%lld\r\n"
-                                    "keyspace_hits:%lld\r\n"
-                                    "keyspace_misses:%lld\r\n"
-                                    "pubsub_channels:%ld\r\n"
-                                    "pubsub_patterns:%lu\r\n"
-                                    "latest_fork_usec:%lld\r\n"
-                                    "migrate_cached_sockets:%ld\r\n",
+                            "total_connections_received:%lld\r\n"
+                            "total_commands_processed:%lld\r\n"
+                            "instantaneous_ops_per_sec:%lld\r\n"
+                            "total_net_input_bytes:%lld\r\n"
+                            "total_net_output_bytes:%lld\r\n"
+                            "instantaneous_input_kbps:%.2f\r\n"
+                            "instantaneous_output_kbps:%.2f\r\n"
+                            "rejected_connections:%lld\r\n"
+                            "sync_full:%lld\r\n"
+                            "sync_partial_ok:%lld\r\n"
+                            "sync_partial_err:%lld\r\n"
+                            "expired_keys:%lld\r\n"
+                            "evicted_keys:%lld\r\n"
+                            "keyspace_hits:%lld\r\n"
+                            "keyspace_misses:%lld\r\n"
+                            "pubsub_channels:%ld\r\n"
+                            "pubsub_patterns:%lu\r\n"
+                            "latest_fork_usec:%lld\r\n"
+                            "migrate_cached_sockets:%ld\r\n",
                             server.stat_numconnections,
                             server.stat_numcommands,
                             getInstantaneousMetric(STATS_METRIC_COMMAND),
@@ -3155,7 +3163,7 @@ sds genRedisInfoString(char *section) {
         if (sections++) info = sdscat(info, "\r\n");
         info = sdscatprintf(info,
                             "# Replication\r\n"
-                                    "role:%s\r\n",
+                            "role:%s\r\n",
                             server.masterhost == NULL ? "master" : "slave");
         if (server.masterhost) {
             long long slave_repl_offset = 1;
@@ -3167,11 +3175,11 @@ sds genRedisInfoString(char *section) {
 
             info = sdscatprintf(info,
                                 "master_host:%s\r\n"
-                                        "master_port:%d\r\n"
-                                        "master_link_status:%s\r\n"
-                                        "master_last_io_seconds_ago:%d\r\n"
-                                        "master_sync_in_progress:%d\r\n"
-                                        "slave_repl_offset:%lld\r\n", server.masterhost,
+                                "master_port:%d\r\n"
+                                "master_link_status:%s\r\n"
+                                "master_last_io_seconds_ago:%d\r\n"
+                                "master_sync_in_progress:%d\r\n"
+                                "slave_repl_offset:%lld\r\n", server.masterhost,
                                 server.masterport,
                                 (server.repl_state == REPL_STATE_CONNECTED) ?
                                 "up" : "down",
@@ -3184,7 +3192,7 @@ sds genRedisInfoString(char *section) {
             if (server.repl_state == REPL_STATE_TRANSFER) {
                 info = sdscatprintf(info,
                                     "master_sync_left_bytes:%lld\r\n"
-                                            "master_sync_last_io_seconds_ago:%d\r\n", (long long)
+                                    "master_sync_last_io_seconds_ago:%d\r\n", (long long)
                                             (server.repl_transfer_size - server.repl_transfer_read),
                                     (int) (server.unixtime - server.repl_transfer_lastio)
                 );
@@ -3197,7 +3205,7 @@ sds genRedisInfoString(char *section) {
             }
             info = sdscatprintf(info,
                                 "slave_priority:%d\r\n"
-                                        "slave_read_only:%d\r\n",
+                                "slave_read_only:%d\r\n",
                                 server.slave_priority,
                                 server.repl_slave_ro);
         }
@@ -3251,7 +3259,7 @@ sds genRedisInfoString(char *section) {
 
                 info = sdscatprintf(info,
                                     "slave%d:ip=%s,port=%d,state=%s,"
-                                            "offset=%lld,lag=%ld\r\n",
+                                    "offset=%lld,lag=%ld\r\n",
                                     slaveid, slaveip, slave->slave_listening_port, state,
                                     slave->repl_ack_off, lag);
                 slaveid++;
@@ -3259,10 +3267,10 @@ sds genRedisInfoString(char *section) {
         }
         info = sdscatprintf(info,
                             "master_repl_offset:%lld\r\n"
-                                    "repl_backlog_active:%d\r\n"
-                                    "repl_backlog_size:%lld\r\n"
-                                    "repl_backlog_first_byte_offset:%lld\r\n"
-                                    "repl_backlog_histlen:%lld\r\n",
+                            "repl_backlog_active:%d\r\n"
+                            "repl_backlog_size:%lld\r\n"
+                            "repl_backlog_first_byte_offset:%lld\r\n"
+                            "repl_backlog_histlen:%lld\r\n",
                             server.master_repl_offset,
                             server.repl_backlog != NULL,
                             server.repl_backlog_size,
@@ -3275,10 +3283,10 @@ sds genRedisInfoString(char *section) {
         if (sections++) info = sdscat(info, "\r\n");
         info = sdscatprintf(info,
                             "# CPU\r\n"
-                                    "used_cpu_sys:%.2f\r\n"
-                                    "used_cpu_user:%.2f\r\n"
-                                    "used_cpu_sys_children:%.2f\r\n"
-                                    "used_cpu_user_children:%.2f\r\n",
+                            "used_cpu_sys:%.2f\r\n"
+                            "used_cpu_user:%.2f\r\n"
+                            "used_cpu_sys_children:%.2f\r\n"
+                            "used_cpu_user_children:%.2f\r\n",
                             (float) self_ru.ru_stime.tv_sec + (float) self_ru.ru_stime.tv_usec / 1000000,
                             (float) self_ru.ru_utime.tv_sec + (float) self_ru.ru_utime.tv_usec / 1000000,
                             (float) c_ru.ru_stime.tv_sec + (float) c_ru.ru_stime.tv_usec / 1000000,
@@ -3306,7 +3314,7 @@ sds genRedisInfoString(char *section) {
         if (sections++) info = sdscat(info, "\r\n");
         info = sdscatprintf(info,
                             "# Cluster\r\n"
-                                    "cluster_enabled:%d\r\n",
+                            "cluster_enabled:%d\r\n",
                             server.cluster_enabled);
     }
 
@@ -4126,7 +4134,7 @@ int main(int argc, char **argv) {
             if (verifyClusterConfigWithData() == C_ERR) {
                 serverLog(LL_WARNING,
                           "You can't have keys in a DB different than DB 0 when in "
-                                  "Cluster mode. Exiting.");
+                          "Cluster mode. Exiting.");
                 exit(1);
             }
         }

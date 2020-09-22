@@ -442,7 +442,9 @@ void initSentinelConfig(void) {
     server.port = REDIS_SENTINEL_PORT;
 }
 
-/* Perform the Sentinel mode initialization. */
+/**
+ * 清理掉server.commands。加入只支持sentinelcmds的命令
+ */
 void initSentinel(void) {
     unsigned int j;
 
