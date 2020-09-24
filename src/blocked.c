@@ -76,12 +76,12 @@
 int getTimeoutFromObjectOrReply(client *c, robj *object, mstime_t *timeout, int unit) {
     long long tval;
 
-    if (getLongLongFromObjectOrReply(c,object,&tval,
-        "timeout is not an integer or out of range") != C_OK)
+    if (getLongLongFromObjectOrReply(c, object, &tval,
+                                     "timeout is not an integer or out of range") != C_OK)
         return C_ERR;
 
     if (tval < 0) {
-        addReplyError(c,"timeout is negative");
+        addReplyError(c, "timeout is negative");
         return C_ERR;
     }
 
@@ -114,7 +114,7 @@ void processUnblockedClients(void) {
         ln = listFirst(server.unblocked_clients);
         serverAssert(ln != NULL);
         c = ln->value;
-        listDelNode(server.unblocked_clients,ln);
+        listDelNode(server.unblocked_clients, ln);
         c->flags &= ~CLIENT_UNBLOCKED;
 
         /* Process remaining data in the input buffer, unless the client
@@ -148,7 +148,7 @@ void unblockClient(client *c) {
      * blocking operation, don't add back it into the list multiple times. */
     if (!(c->flags & CLIENT_UNBLOCKED)) {
         c->flags |= CLIENT_UNBLOCKED;
-        listAddNodeTail(server.unblocked_clients,c);
+        listAddNodeTail(server.unblocked_clients, c);
     }
 }
 
@@ -156,9 +156,9 @@ void unblockClient(client *c) {
  * send it a reply of some kind. */
 void replyToBlockedClientTimedOut(client *c) {
     if (c->btype == BLOCKED_LIST) {
-        addReply(c,shared.nullmultibulk);
+        addReply(c, shared.nullmultibulk);
     } else if (c->btype == BLOCKED_WAIT) {
-        addReplyLongLong(c,replicationCountAcksByOffset(c->bpop.reploffset));
+        addReplyLongLong(c, replicationCountAcksByOffset(c->bpop.reploffset));
     } else {
         serverPanic("Unknown btype in replyToBlockedClientTimedOut().");
     }
@@ -175,14 +175,14 @@ void disconnectAllBlockedClients(void) {
     listNode *ln;
     listIter li;
 
-    listRewind(server.clients,&li);
-    while((ln = listNext(&li))) {
+    listRewind(server.clients, &li);
+    while ((ln = listNext(&li))) {
         client *c = listNodeValue(ln);
 
         if (c->flags & CLIENT_BLOCKED) {
-            addReplySds(c,sdsnew(
-                "-UNBLOCKED force unblock from blocking operation, "
-                "instance state changed (master -> slave?)\r\n"));
+            addReplySds(c, sdsnew(
+                    "-UNBLOCKED force unblock from blocking operation, "
+                    "instance state changed (master -> slave?)\r\n"));
             unblockClient(c);
             c->flags |= CLIENT_CLOSE_AFTER_REPLY;
         }

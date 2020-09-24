@@ -2551,7 +2551,7 @@ int processCommand(client *c) {
         return C_OK;
     }
 
-    /* Exec the command */
+    /* 执行了multi命令之后，会被标记为CLIENT_MULTI，之后其它的命令都会被放到队列存起来，后面一起执行 */
     if (c->flags & CLIENT_MULTI &&
         c->cmd->proc != execCommand && c->cmd->proc != discardCommand &&
         c->cmd->proc != multiCommand && c->cmd->proc != watchCommand) {
