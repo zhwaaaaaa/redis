@@ -526,9 +526,10 @@ void sentinelIsRunning(void) {
      * will be this Sentinel ID across restarts. */
     for (j = 0; j < CONFIG_RUN_ID_SIZE; j++)
         if (sentinel.myid[j] != 0) break;
-
+    // myid 都是0，说明id还未设置
     if (j == CONFIG_RUN_ID_SIZE) {
         /* Pick ID and presist the config. */
+        // 随机生成id 重写配置文件
         getRandomHexChars(sentinel.myid, CONFIG_RUN_ID_SIZE);
         sentinelFlushConfig();
     }
@@ -2913,6 +2914,15 @@ int sentinelIsQuorumReachable(sentinelRedisInstance *master, int *usableptr) {
     return result;
 }
 
+/**
+ * sentinel 命令实现
+ * sentinel masters 列出所有的master节点
+ * sentinel master <mymaster> 列出mymaster集群的master节点信息
+ * sentinel slaves <mymaster> 列出mymaster的所有slaves信息
+ * sentinel sentinels <mymaster> 列出监控mymaster的所有sentinel节点信息
+ * sentinel failover <mymaster> 通知故障转移
+ * @param c
+ */
 void sentinelCommand(client *c) {
     if (!strcasecmp(c->argv[1]->ptr, "masters")) {
         /* SENTINEL MASTERS */
@@ -4268,10 +4278,9 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
     sentinelSendPeriodicCommands(ri);
 
     /* ============== ACTING HALF ============= */
-    /* We don't proceed with the acting half if we are in TILT mode.
-     * TILT happens when we find something odd with the time, like a
-     * sudden change in the clock. */
+    /* tilt==1表示时钟发生了回拨 */
     if (sentinel.tilt) {
+        // 发生时钟回拨2s 内不会检测
         if (mstime() - sentinel.tilt_start_time < SENTINEL_TILT_PERIOD) return;
         sentinel.tilt = 0;
         sentinelEvent(LL_WARNING, "-tilt", NULL, "#tilt mode exited");

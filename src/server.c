@@ -1989,10 +1989,7 @@ void initServer(void) {
         }
     }
 
-    /* 32 bit instances are limited to 4GB of address space, so if there is
-     * no explicit limit in the user provided configuration we set a limit
-     * at 3 GB using maxmemory with 'noeviction' policy'. This avoids
-     * useless crashes of the Redis instance for out of memory. */
+    // 32 位机器最多用3G内存。防止内存占用太多而挂掉
     if (server.arch_bits == 32 && server.maxmemory == 0) {
         serverLog(LL_WARNING,
                   "Warning: 32 bit instance detected but no memory limit set. Setting 3 GB maxmemory limit with 'noeviction' policy now.");
@@ -3508,7 +3505,7 @@ int freeMemoryIfNeeded(void) {
             client *slave = listNodeValue(ln);
             unsigned long obuf_bytes = getClientOutputBufferMemoryUsage(slave);
             if (obuf_bytes > mem_used)
-                mem_used = 0;
+                mem_used = 0;// 不可能
             else
                 mem_used -= obuf_bytes;
         }
@@ -3518,15 +3515,18 @@ int freeMemoryIfNeeded(void) {
         mem_used -= aofRewriteBufferSize();
     }
 
-    /* Check if we are over the memory limit. */
+    // 总的内存大小 - 客户端output buffer - aof output buffer
+    // 超过服务器配置的最大内存才进行淘汰
     if (mem_used <= server.maxmemory) return C_OK;
 
+    // 如果配置的是不淘汰，则不释放内存，等着客户端写报错
     if (server.maxmemory_policy == MAXMEMORY_NO_EVICTION)
         return C_ERR; /* We need to free memory, but policy forbids. */
 
     /* Compute how much memory we need to free. */
     mem_tofree = mem_used - server.maxmemory;
     mem_freed = 0;
+    // 计算淘汰内存的时间
     latencyStartMonitor(latency);
     while (mem_freed < mem_tofree) {
         int j, k, keys_freed = 0;
@@ -3607,20 +3607,14 @@ int freeMemoryIfNeeded(void) {
                 }
             }
 
-            /* Finally remove the selected key. */
+            // 前面一顿操作，找到要淘汰的key了
+            // 每次循环淘汰db中的一个key。一共16个db。一次从一个db淘汰一个key。
             if (bestkey) {
                 long long delta;
 
                 robj *keyobj = createStringObject(bestkey, sdslen(bestkey));
                 propagateExpire(db, keyobj);
-                /* We compute the amount of memory freed by dbDelete() alone.
-                 * It is possible that actually the memory needed to propagate
-                 * the DEL in AOF and replication link is greater than the one
-                 * we are freeing removing the key, but we can't account for
-                 * that otherwise we would never exit the loop.
-                 *
-                 * AOF and Output buffer memory will be freed eventually so
-                 * we only care about memory used by the key space. */
+                // 计算用减少了多少内存
                 delta = (long long) zmalloc_used_memory();
                 latencyStartMonitor(eviction_latency);
                 dbDelete(db, keyobj);

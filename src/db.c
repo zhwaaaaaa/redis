@@ -882,14 +882,13 @@ long long getExpire(redisDb *db, robj *key) {
     return dictGetSignedIntegerVal(de);
 }
 
-/* Propagate expires into slaves and the AOF file.
- * When a key expires in the master, a DEL operation for this key is sent
- * to all the slaves and the AOF file if enabled.
- *
- * This way the key expiry is centralized in one place, and since both
- * AOF and the master->slave link guarantee operation ordering, everything
- * will be consistent even if we allow write operations against expiring
- * keys. */
+/**
+ * propagate 传播
+ * 传播过期事件。
+ * 1.向aof追加一条delete 命令，给所有slave 发送一条delete命令
+ * @param db
+ * @param key
+ */
 void propagateExpire(redisDb *db, robj *key) {
     robj *argv[2];
 

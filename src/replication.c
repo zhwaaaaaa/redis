@@ -988,6 +988,13 @@ void replicationCreateMasterClient(int fd) {
 
 /**
  * 这个函数是slave连上master后执行psync ? -1或者sync命令后，master会接着发送整个rdb数据过来。
+ * 这个函数是master连接的事件处理函数。
+ * 过程：
+ * 1.接受master同步过来的rdb数据，同步写到一个临时的rbd文件中。
+ * 2.当接受完毕rdb数据之后，把临时文件重命名成正式的rdb文件。
+ * 3.清空db的内存数据.调用rdbLoad重新加载rdb数据
+ * 4.rewriteAof文件。
+ * 5.创建server.master对象。标记为master。接下来进行增量同步。增量同步的原理就是像客户端一样，接受master的写命令
  * @param el eventLoop
  * @param fd fd
  * @param privdata NULL
@@ -1136,6 +1143,7 @@ void readSyncBulkPayload(aeEventLoop *el, int fd, void *privdata, int mask) {
     }
 
     if (eof_reached) {
+        // 读到文件末尾，改成rdb_name
         if (rename(server.repl_transfer_tmpfile, server.rdb_filename) == -1) {
             serverLog(LL_WARNING,
                       "Failed trying to rename the temp DB into dump.rdb in MASTER <-> SLAVE synchronization: %s",
@@ -1830,7 +1838,7 @@ void replicationHandleMasterDisconnection(void) {
 }
 
 /**
- * slaveof on one 把自己变成master
+ * slaveof no one 把自己变成master
  * slaveof host port 把自己变成slave，同步host port的数据
  * @param c
  */
